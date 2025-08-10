@@ -1,0 +1,17 @@
+body {
+  text-align: center;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(#001f3f, #0074D9);
+  color: white;
+}
+
+#gameCanvas {
+  background: #111;
+  display: block;
+  margin: 20px auto;
+  border: 2px solid white;
+}
+
+#score {
+  font-size: 24px;
+}
