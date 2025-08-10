@@ -10,32 +10,6 @@ let score = 0;
 let stars = [];
 let gameRunning = true;
 
-// Add click event listener to catch stars on click
-// Keep track of stars already counted on hover to avoid repeated scoring
-let hoveredStars = new Set();
-
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  for (let i = stars.length - 1; i >= 0; i--) {
-    const star = stars[i];
-    const dx = mouseX - star.x;
-    const dy = mouseY - star.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance < star.size / 2 && !hoveredStars.has(star)) {
-      score++;
-      scoreDisplay.textContent = score;
-      hoveredStars.add(star);
-      stars.splice(i, 1);
-      break; // only count one star per mousemove event
-    }
-  }
-});
-
-
 // Smooth basket movement variables
 let basketX = 160;
 let basketTargetX = 160;
@@ -48,7 +22,7 @@ playerNameDisplay.textContent = playerName;
 let highScore = localStorage.getItem("highScore") || 0;
 highScoreDisplay.textContent = highScore;
 
-// Basket properties  ( speed)
+// Basket properties
 const basket = { y: 450, width: 80, height: 20, speed: 8 };
 
 function createStar() {
@@ -56,10 +30,31 @@ function createStar() {
     x: Math.random() * (canvas.width - 20) + 10,
     y: -20,
     size: 20,
-    speed: 1 + Math.random() * 2, // slower stars
+    speed: 1 + Math.random() * 2,
+    caught: false,  // Initialize caught to false
   });
 }
 
+// Hover event to catch stars
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  stars.forEach((star) => {
+    if (!star.caught) {
+      const dx = mouseX - star.x;
+      const dy = mouseY - star.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < star.size / 2) {
+        star.caught = true;
+        score++;
+        scoreDisplay.textContent = score;
+      }
+    }
+  });
+});
 
 function drawBasket() {
   ctx.fillStyle = "#ffcc33";
@@ -112,6 +107,11 @@ function drawStars() {
 function moveStars() {
   for (let i = stars.length - 1; i >= 0; i--) {
     stars[i].y += stars[i].speed;
+
+    if (stars[i].caught) {
+      stars.splice(i, 1);
+      continue;
+    }
 
     // Check collision with basket
     if (
@@ -177,19 +177,12 @@ retryBtn.addEventListener("click", () => {
   retryBtn.style.display = "none";
   gameLoop();
 });
-// Start spawning stars after 2 seconds
-setTimeout(() => {
-  setInterval(() => {
-    if (gameRunning) createStar();
-  }, 1200);  // slower spawn rate
-}, 2000); // 2 seconds delay before starting
 
-// Create stars regularly
+// Start spawning stars after 2 seconds
 setTimeout(() => {
   setInterval(() => {
     if (gameRunning) createStar();
   }, 1200);
 }, 2000);
-
 
 gameLoop();
