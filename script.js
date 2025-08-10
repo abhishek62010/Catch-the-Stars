@@ -74,3 +74,24 @@ document.addEventListener("keydown", (e) => {
 
 setInterval(createStar, 1000);
 gameLoop();
+
+let playerName = prompt("Enter your name:");
+if (!playerName) playerName = "Guest";
+
+let highScore = localStorage.getItem("highScore") || 0;
+
+function updateHighScore(score) {
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("highScore", highScore);
+  }
+}
+
+
+function gameOver() {
+  updateHighScore(score);
+  document.getElementById("retryBtn").style.display = "block";
+  alert(`${playerName}, Game Over! Your score: ${score} | High Score: ${highScore}`);
+}
+
+
