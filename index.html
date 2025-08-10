@@ -1,25 +1,120 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Catch the Stars</title>
-  <style>
-    body { text-align: center; background: #222; color: #fff; font-family: Arial; }
-    canvas { background: #333; display: block; margin: auto; }
-    #retryBtn {
-      display: none;
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-top: 10px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <h1>Catch the Stars</h1>
-  <p>Player: <span id="playerName"></span> | Score: <span id="score">0</span> | High Score: <span id="highScore">0</span></p>
-  <canvas id="gameCanvas"></canvas>
-  <button id="retryBtn">Retry</button>
+<canvas id="gameCanvas"></canvas>
+<div>
+  <p id="scoreBoard">
+    Player: <span id="playerName"></span> |
+    Score: <span id="score">0</span> |
+    High Score: <span id="highScore">0</span>
+  </p>
+  <button id="retryBtn" style="display:none;">Retry</button>
+</div>
 
-  <script src="game.js"></script>
-</body>
-</html>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 400;
+canvas.height = 500;
+
+let score = 0;
+const scoreDisplay = document.getElementById("score");
+const playerNameDisplay = document.getElementById("playerName");
+const highScoreDisplay = document.getElementById("highScore");
+
+// Basket
+const basket = { x: 160, y: 450, width: 80, height: 20, speed: 5 };
+
+// Stars
+let stars = [];
+
+// Ask player name
+let playerName = prompt("Enter your name:") || "Guest";
+playerNameDisplay.textContent = playerName;
+
+// High score
+let highScore = localStorage.getItem("highScore") || 0;
+highScoreDisplay.textContent = highScore;
+
+function createStar() {
+  stars.push({
+    x: Math.random() * (canvas.width - 20),
+    y: 0,
+    size: 20,
+    speed: 2 + Math.random() * 3,
+  });
+}
+
+function drawBasket() {
+  ctx.fillStyle = "#ffd60a";
+  ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+}
+
+function drawStars() {
+  ctx.fillStyle = "#fca311";
+  stars.forEach((star) => {
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function moveStars() {
+  stars.forEach((star, index) => {
+    star.y += star.speed;
+
+    // Collision detection
+    if (
+      star.y + star.size > basket.y &&
+      star.x > basket.x &&
+      star.x < basket.x + basket.width
+    ) {
+      score++;
+      scoreDisplay.textContent = score;
+      stars.splice(index, 1);
+    }
+
+    // Remove if out of screen
+    if (star.y > canvas.height) {
+      stars.splice(index, 1);
+      gameOver();
+    }
+  });
+}
+
+function updateHighScore(score) {
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("highScore", highScore);
+    highScoreDisplay.textContent = highScore;
+  }
+}
+
+function gameOver() {
+  updateHighScore(score);
+  document.getElementById("retryBtn").style.display = "block";
+  alert(`${playerName}, Game Over! Your score: ${score} | High Score: ${highScore}`);
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBasket();
+  drawStars();
+  moveStars();
+  requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft" && basket.x > 0) basket.x -= basket.speed;
+  if (e.key === "ArrowRight" && basket.x < canvas.width - basket.width)
+    basket.x += basket.speed;
+});
+
+document.getElementById("retryBtn").addEventListener("click", () => {
+  score = 0;
+  scoreDisplay.textContent = score;
+  stars = [];
+  document.getElementById("retryBtn").style.display = "none";
+});
+
+setInterval(createStar, 1000);
+gameLoop();
+</script>
