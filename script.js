@@ -176,9 +176,8 @@ retryBtn.addEventListener("click", () => {
 setTimeout(() => {
   setInterval(() => {
     if (gameRunning) createStar();
-  }, 900);
-}, 2000);
-
+  }, 1200);  // slower spawn rate
+}, 2000); // 2 seconds delay before starting
 
 // Create stars regularly
 setTimeout(() => {
