@@ -11,25 +11,30 @@ let stars = [];
 let gameRunning = true;
 
 // Add click event listener to catch stars on click
-canvas.addEventListener('click', (e) => {
+// Keep track of stars already counted on hover to avoid repeated scoring
+let hoveredStars = new Set();
+
+canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const clickY = e.clientY - rect.top;
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
 
   for (let i = stars.length - 1; i >= 0; i--) {
     const star = stars[i];
-    const dx = clickX - star.x;
-    const dy = clickY - star.y;
+    const dx = mouseX - star.x;
+    const dy = mouseY - star.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance < star.size / 2) {
+    if (distance < star.size / 2 && !hoveredStars.has(star)) {
       score++;
       scoreDisplay.textContent = score;
+      hoveredStars.add(star);
       stars.splice(i, 1);
-      break; // only remove one star per click
+      break; // only count one star per mousemove event
     }
   }
 });
+
 
 // Smooth basket movement variables
 let basketX = 160;
