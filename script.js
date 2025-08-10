@@ -43,7 +43,7 @@ playerNameDisplay.textContent = playerName;
 let highScore = localStorage.getItem("highScore") || 0;
 highScoreDisplay.textContent = highScore;
 
-// Basket properties
+// Basket properties  ( speed)
 const basket = { y: 450, width: 80, height: 20, speed: 8 };
 
 function createStar() {
@@ -51,9 +51,10 @@ function createStar() {
     x: Math.random() * (canvas.width - 20) + 10,
     y: -20,
     size: 20,
-    speed: 2 + Math.random() * 3,
+    speed: 1 + Math.random() * 2, // slower stars
   });
 }
+
 
 function drawBasket() {
   ctx.fillStyle = "#ffcc33";
@@ -171,10 +172,20 @@ retryBtn.addEventListener("click", () => {
   retryBtn.style.display = "none";
   gameLoop();
 });
+// Start spawning stars after 2 seconds
+setTimeout(() => {
+  setInterval(() => {
+    if (gameRunning) createStar();
+  }, 900);
+}, 2000);
+
 
 // Create stars regularly
-setInterval(() => {
-  if (gameRunning) createStar();
-}, 900);
+setTimeout(() => {
+  setInterval(() => {
+    if (gameRunning) createStar();
+  }, 1200);
+}, 2000);
+
 
 gameLoop();
