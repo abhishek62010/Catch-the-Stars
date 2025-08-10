@@ -1,59 +1,76 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+
 canvas.width = 400;
 canvas.height = 500;
 
 let score = 0;
+const scoreDisplay = document.getElementById("score");
+
+// Basket
+const basket = { x: 160, y: 450, width: 80, height: 20, speed: 5 };
+
+// Star
 let stars = [];
 
-class Star {
-  constructor(x, y, speed) {
-    this.x = x;
-    this.y = y;
-    this.speed = speed;
-    this.size = 20;
-  }
-  draw() {
-    ctx.fillStyle = "yellow";
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  update() {
-    this.y += this.speed;
-  }
-}
-
-function spawnStar() {
-  const x = Math.random() * (canvas.width - 20) + 10;
-  const speed = Math.random() * 3 + 1;
-  stars.push(new Star(x, 0, speed));
-}
-
-canvas.addEventListener("click", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const clickY = e.clientY - rect.top;
-
-  stars = stars.filter(star => {
-    const dist = Math.hypot(clickX - star.x, clickY - star.y);
-    if (dist < star.size) {
-      score++;
-      document.getElementById("score").innerText = "Score: " + score;
-      return false;
-    }
-    return true;
+function createStar() {
+  stars.push({
+    x: Math.random() * (canvas.width - 20),
+    y: 0,
+    size: 20,
+    speed: 2 + Math.random() * 3,
   });
+}
+
+function drawBasket() {
+  ctx.fillStyle = "#ffd60a";
+  ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+}
+
+function drawStars() {
+  ctx.fillStyle = "#fca311";
+  stars.forEach((star) => {
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function moveStars() {
+  stars.forEach((star, index) => {
+    star.y += star.speed;
+
+    // Collision detection
+    if (
+      star.y + star.size > basket.y &&
+      star.x > basket.x &&
+      star.x < basket.x + basket.width
+    ) {
+      score++;
+      scoreDisplay.textContent = score;
+      stars.splice(index, 1);
+    }
+
+    // Remove if out of screen
+    if (star.y > canvas.height) {
+      stars.splice(index, 1);
+    }
+  });
+}
+
+function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBasket();
+  drawStars();
+  moveStars();
+  requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft" && basket.x > 0) basket.x -= basket.speed;
+  if (e.key === "ArrowRight" && basket.x < canvas.width - basket.width)
+    basket.x += basket.speed;
 });
 
-function updateGame() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  stars.forEach(star => {
-    star.update();
-    star.draw();
-  });
-  stars = stars.filter(star => star.y < canvas.height);
-}
-
-setInterval(spawnStar, 1000);
-setInterval(updateGame, 20);
+setInterval(createStar, 1000);
+gameLoop();
