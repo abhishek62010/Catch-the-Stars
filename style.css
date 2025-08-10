@@ -1,17 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  background: linear-gradient(#001f3f, #0074D9);
-  color: white;
+  margin: 0;
+  background: linear-gradient(135deg, #1f1c2c, #928dab);
+  font-family: 'Poppins', sans-serif;
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  user-select: none;
+}
+
+h1 {
+  margin-top: 2rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px #ffcc33aa;
+}
+
+#scoreBoard {
+  margin-top: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1.5rem;
+  border-radius: 20px;
+  font-weight: 600;
+  box-shadow: 0 0 10px #ffcc33aa;
+  user-select: text;
+}
+
+#scoreBoard span {
+  margin: 0 0.5rem;
 }
 
 #gameCanvas {
-  background: #111;
+  margin-top: 2rem;
+  border-radius: 20px;
+  background: linear-gradient(to bottom, #000814, #001d3d);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+  max-width: 100%;
+  width: 400px;
+  height: 500px;
   display: block;
-  margin: 20px auto;
-  border: 2px solid white;
 }
 
-#score {
-  font-size: 24px;
+#retryBtn {
+  display: none;
+  margin-top: 1.5rem;
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+  background: #ffcc33;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #222;
+  box-shadow: 0 0 15px #ffcc33bb;
+  transition: background 0.3s ease;
+}
+
+#retryBtn:hover {
+  background: #ffd633;
+  box-shadow: 0 0 20px #ffd633cc;
 }
