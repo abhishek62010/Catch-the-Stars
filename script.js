@@ -10,6 +10,27 @@ let score = 0;
 let stars = [];
 let gameRunning = true;
 
+// Add click event listener to catch stars on click
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const clickY = e.clientY - rect.top;
+
+  for (let i = stars.length - 1; i >= 0; i--) {
+    const star = stars[i];
+    const dx = clickX - star.x;
+    const dy = clickY - star.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < star.size / 2) {
+      score++;
+      scoreDisplay.textContent = score;
+      stars.splice(i, 1);
+      break; // only remove one star per click
+    }
+  }
+});
+
 // Smooth basket movement variables
 let basketX = 160;
 let basketTargetX = 160;
