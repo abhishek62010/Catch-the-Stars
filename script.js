@@ -7,6 +7,8 @@ const playerNameDisplay = document.getElementById("playerName");
 const retryBtn = document.getElementById("retryBtn");
 
 let score = 0;
+let bombs = [];
+
 let stars = [];
 let gameRunning = true;
 let speedMultiplier = 1;
@@ -24,7 +26,17 @@ playerNameDisplay.textContent = playerName;
 let highScore = localStorage.getItem("highScore") || 0;
 highScoreDisplay.textContent = highScore;
 
-// Basket properties
+// Basket properties star & bomb 
+function createBomb() {
+  bombs.push({
+    x: Math.random() * (canvas.width - 20) + 10,
+    y: -20,
+    size: 25,
+    speed: (1 + Math.random() * 2) * speedMultiplier
+  });
+}
+
+
 const basket = { y: 450, width: 80, height: 20, speed: 8 };
 
 function createStar() {
@@ -115,6 +127,28 @@ function moveStars() {
       continue;
     }
 
+    function moveBombs() {
+  for (let i = bombs.length - 1; i >= 0; i--) {
+    bombs[i].y += bombs[i].speed * speedMultiplier;
+
+    // Check collision with basket
+    if (
+      bombs[i].y + bombs[i].size > basket.y &&
+      bombs[i].x > basketX &&
+      bombs[i].x < basketX + basket.width
+    ) {
+      // Hit basket -> Game Over
+      endGame();
+      return;
+    } 
+    // Remove if falls off screen
+    else if (bombs[i].y > canvas.height) {
+      bombs.splice(i, 1);
+    }
+  }
+}
+
+
     // Check collision with basket
     if (
       stars[i].y + stars[i].size > basket.y &&
@@ -158,6 +192,11 @@ function gameLoop() {
 
   drawBasket();
   drawStars();
+  drawBombs();
+  moveStars();
+  moveBombs();
+
+  drawStars();
   moveStars();
 
   requestAnimationFrame(gameLoop);
@@ -176,8 +215,10 @@ document.addEventListener("keydown", (e) => {
 retryBtn.addEventListener("click", () => {
   score = 0;
   stars = [];
+  bombs = []; // reset bombs too
   scoreDisplay.textContent = score;
   gameRunning = true;
+  speedMultiplier = 1; // reset speed
   retryBtn.style.display = "none";
   gameLoop();
 });
@@ -188,5 +229,15 @@ setTimeout(() => {
     if (gameRunning) createStar();
   }, 1200);
 }, 2000);
+
+setInterval(() => {
+  if (gameRunning) {
+    createStar();
+    if (Math.random() < 0.3) { // 30% chance to spawn bomb
+      createBomb();
+    }
+  }
+}, 1200);
+
 
 gameLoop();
