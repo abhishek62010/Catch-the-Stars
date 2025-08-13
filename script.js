@@ -9,6 +9,8 @@ const retryBtn = document.getElementById("retryBtn");
 let score = 0;
 let stars = [];
 let gameRunning = true;
+let speedMultiplier = 1;
+
 
 // Smooth basket movement variables
 let basketX = 160;
@@ -106,7 +108,7 @@ function drawStars() {
 
 function moveStars() {
   for (let i = stars.length - 1; i >= 0; i--) {
-    stars[i].y += stars[i].speed;
+    stars[i].y += stars[i].speed * speedMultiplier; // <- applies multiplier;
 
     if (stars[i].caught) {
       stars.splice(i, 1);
@@ -148,6 +150,8 @@ function endGame() {
 function gameLoop() {
   if (!gameRunning) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+   // Slowly increase difficulty
+  speedMultiplier += 0.0005; // adjust to make it faster/slower
 
   // Smooth basket movement (lerp)
   basketX += (basketTargetX - basketX) * 0.2;
