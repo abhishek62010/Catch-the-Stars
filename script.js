@@ -1,221 +1,232 @@
+// =========================
+// 1. BASIC GAME VARIABLES
+// =========================
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-
-const scoreDisplay = document.getElementById("score");
-const highScoreDisplay = document.getElementById("highScore");
-const playerNameDisplay = document.getElementById("playerName");
 const retryBtn = document.getElementById("retryBtn");
+const playerNameEl = document.getElementById("playerName");
+const scoreEl = document.getElementById("score");
+const highScoreEl = document.getElementById("highScore");
 
-let score = 0;
-let stars = [];
-let bombs = [];
-let gameRunning = false;
-let speedMultiplier = 1;
-let spawnInterval;
-let basketX = 160;
-let basketTargetX = 160;
-
+// Get player name
 let playerName = prompt("Enter your name:") || "Guest";
-playerNameDisplay.textContent = playerName;
+playerNameEl.textContent = playerName;
 
-let highScore = localStorage.getItem("highScore") || 0;
-highScoreDisplay.textContent = highScore;
+// Game data
+let stars = [];      // List of star objects
+let bombs = [];      // List of bomb objects
+let basketX = canvas.width / 2 - 25;
+let basketTargetX = basketX;
+let basketWidth = 50;
+let basketHeight = 20;
+let score = 0;
+let highScore = localStorage.getItem("catchStarsHighScore") || 0;
+highScoreEl.textContent = highScore;
+let speedMultiplier = 1;  // Controls falling speed
+let gameRunning = true;
 
-const basket = { y: 450, width: 80, height: 20, speed: 8 };
+// Mouse tracking
+let mouseX = 0;
+let mouseY = 0;
+let mouseDown = false;
 
-// === Spawn Functions ===
-function createStar() {
-  stars.push({
-    x: Math.random() * (canvas.width - 20) + 10,
-    y: -20,
-    size: 20,
-    speed: 1 + Math.random() * 2
-  });
-}
+// =========================
+// 2. EVENT LISTENERS
+// =========================
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = e.clientX - rect.left;
+  mouseY = e.clientY - rect.top;
+});
 
-function createBomb() {
-  bombs.push({
-    x: Math.random() * (canvas.width - 25) + 12,
-    y: -25,
-    size: 25,
-    speed: 1 + Math.random() * 2
-  });
-}
+canvas.addEventListener("mousedown", () => {
+  mouseDown = true;
+});
 
-// === Draw Functions ===
+canvas.addEventListener("mouseup", () => {
+  mouseDown = false;
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") basketTargetX -= 30;
+  if (e.key === "ArrowRight") basketTargetX += 30;
+});
+
+retryBtn.addEventListener("click", resetGame);
+
+// =========================
+// 3. DRAW FUNCTIONS
+// =========================
 function drawBasket() {
-  ctx.fillStyle = "#ffcc33";
-  ctx.shadowColor = "#ffcc33bb";
-  ctx.shadowBlur = 15;
-  ctx.beginPath();
-  ctx.moveTo(basketX, basket.y);
-  ctx.lineTo(basketX + basket.width * 0.1, basket.y - 15);
-  ctx.lineTo(basketX + basket.width * 0.9, basket.y - 15);
-  ctx.lineTo(basketX + basket.width, basket.y);
-  ctx.closePath();
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#ff6600";
+  ctx.fillRect(basketX, canvas.height - basketHeight - 10, basketWidth, basketHeight);
 }
 
 function drawStars() {
-  ctx.fillStyle = "#ffd60a";
-  ctx.shadowColor = "#ffd60abb";
-  ctx.shadowBlur = 20;
-  stars.forEach(star => {
-    const cx = star.x;
-    const cy = star.y;
-    const spikes = 5;
-    const outerRadius = star.size / 2;
-    const innerRadius = outerRadius / 2.5;
-    let rot = Math.PI / 2 * 3;
-    let step = Math.PI / spikes;
-
+  ctx.fillStyle = "yellow";
+  stars.forEach((star) => {
     ctx.beginPath();
-    ctx.moveTo(cx, cy - outerRadius);
-    for (let i = 0; i < spikes; i++) {
-      let x = cx + Math.cos(rot) * outerRadius;
-      let y = cy + Math.sin(rot) * outerRadius;
-      ctx.lineTo(x, y);
-      rot += step;
-
-      x = cx + Math.cos(rot) * innerRadius;
-      y = cy + Math.sin(rot) * innerRadius;
-      ctx.lineTo(x, y);
-      rot += step;
-    }
-    ctx.closePath();
+    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
     ctx.fill();
   });
-  ctx.shadowBlur = 0;
 }
 
 function drawBombs() {
   ctx.fillStyle = "red";
-  ctx.shadowColor = "#ff0000bb";
-  ctx.shadowBlur = 15;
-  bombs.forEach(bomb => {
+  bombs.forEach((bomb) => {
     ctx.beginPath();
-    ctx.arc(bomb.x, bomb.y, bomb.size / 2, 0, Math.PI * 2);
+    ctx.arc(bomb.x, bomb.y, bomb.radius, 0, Math.PI * 2);
     ctx.fill();
   });
-  ctx.shadowBlur = 0;
 }
 
-// === Movement ===
+// =========================
+// 4. STAR & BOMB MOVEMENT
+// =========================
 function moveStars() {
-  for (let i = stars.length - 1; i >= 0; i--) {
-    stars[i].y += stars[i].speed * speedMultiplier;
+  stars.forEach((star, index) => {
+    star.y += star.speed * speedMultiplier;
 
-    // Catch star
+    // Check if star caught by basket
     if (
-      stars[i].y + stars[i].size > basket.y &&
-      stars[i].x > basketX &&
-      stars[i].x < basketX + basket.width
+      star.y + star.radius > canvas.height - basketHeight - 10 &&
+      star.x > basketX &&
+      star.x < basketX + basketWidth
     ) {
       score++;
-      scoreDisplay.textContent = score;
-      stars.splice(i, 1);
-    } 
-    // Missed star
-    else if (stars[i].y > canvas.height) {
-      endGame();
-      return;
+      scoreEl.textContent = score;
+      stars.splice(index, 1);
     }
+    // If star missed (goes off screen)
+    else if (star.y - star.radius > canvas.height) {
+      gameOver();
+    }
+  });
+
+  // Spawn new stars randomly
+  if (Math.random() < 0.02) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: 0,
+      radius: 8,
+      speed: 2 + Math.random() * 2,
+    });
   }
 }
 
 function moveBombs() {
-  for (let i = bombs.length - 1; i >= 0; i--) {
-    bombs[i].y += bombs[i].speed * speedMultiplier;
+  bombs.forEach((bomb, index) => {
+    bomb.y += bomb.speed * speedMultiplier;
 
-    // Hit basket
+    // If bomb hits basket → Game Over
     if (
-      bombs[i].y + bombs[i].size > basket.y &&
-      bombs[i].x > basketX &&
-      bombs[i].x < basketX + basket.width
+      bomb.y + bomb.radius > canvas.height - basketHeight - 10 &&
+      bomb.x > basketX &&
+      bomb.x < basketX + basketWidth
     ) {
-      endGame();
-      return;
+      gameOver();
     }
-    // Fell off screen
-    else if (bombs[i].y > canvas.height) {
-      bombs.splice(i, 1);
+    // Remove bomb if off screen
+    else if (bomb.y - bomb.radius > canvas.height) {
+      bombs.splice(index, 1);
     }
+  });
+
+  // Spawn bombs less frequently than stars
+  if (Math.random() < 0.005) {
+    bombs.push({
+      x: Math.random() * canvas.width,
+      y: 0,
+      radius: 10,
+      speed: 2 + Math.random() * 2,
+    });
   }
 }
 
-// === High Score ===
-function updateHighScore(score) {
+// =========================
+// 5. MOUSE CLICK / HOVER CATCH
+// =========================
+function checkMouseOnStars() {
+  // Click or hover to catch stars
+  stars.forEach((star, index) => {
+    const dx = mouseX - star.x;
+    const dy = mouseY - star.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If mouse is over star
+    if (distance < star.radius + 2) {
+      if (mouseDown || true) { // true allows hover
+        score++;
+        scoreEl.textContent = score;
+        stars.splice(index, 1);
+      }
+    }
+  });
+
+  // Clicking or hovering on bomb ends game
+  bombs.forEach((bomb) => {
+    const dx = mouseX - bomb.x;
+    const dy = mouseY - bomb.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance < bomb.radius + 2) {
+      gameOver();
+    }
+  });
+}
+
+// =========================
+// 6. GAME OVER
+// =========================
+function gameOver() {
+  gameRunning = false;
   if (score > highScore) {
     highScore = score;
-    localStorage.setItem("highScore", highScore);
-    highScoreDisplay.textContent = highScore;
+    localStorage.setItem("catchStarsHighScore", highScore);
   }
+  highScoreEl.textContent = highScore;
+  retryBtn.style.display = "block";
 }
 
-// === End Game ===
-function endGame() {
-  if (!gameRunning) return;
-  gameRunning = false;
-  clearInterval(spawnInterval);
-  updateHighScore(score);
-  alert(`${playerName}, Game Over! Your score: ${score} | High Score: ${highScore}`);
-  retryBtn.style.display = "inline-block";
+// =========================
+// 7. RESET GAME
+// =========================
+function resetGame() {
+  score = 0;
+  scoreEl.textContent = score;
+  stars = [];
+  bombs = [];
+  speedMultiplier = 1;
+  gameRunning = true;
+  retryBtn.style.display = "none";
+  gameLoop();
 }
 
-// === Game Loop ===
+// =========================
+// 8. GAME LOOP
+// =========================
 function gameLoop() {
   if (!gameRunning) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  speedMultiplier += 0.0005; // slow smooth speed increase
+  // Increase speed slowly over time
+  speedMultiplier += 0.0005;
+
+  // Smooth basket movement
   basketX += (basketTargetX - basketX) * 0.2;
 
+  // Draw elements
   drawBasket();
   drawStars();
   drawBombs();
+
+  // Check for mouse catches
+  checkMouseOnStars();
+
+  // Move elements
   moveStars();
   moveBombs();
 
   requestAnimationFrame(gameLoop);
 }
 
-// === Mouse Controls ===
-canvas.addEventListener("mousemove", e => {
-  const rect = canvas.getBoundingClientRect();
-  basketTargetX = e.clientX - rect.left - basket.width / 2;
-  basketTargetX = Math.max(0, Math.min(canvas.width - basket.width, basketTargetX));
-});
-
-canvas.addEventListener("click", e => {
-  const rect = canvas.getBoundingClientRect();
-  basketTargetX = e.clientX - rect.left - basket.width / 2;
-  basketTargetX = Math.max(0, Math.min(canvas.width - basket.width, basketTargetX));
-});
-
-// === Retry Button ===
-retryBtn.addEventListener("click", startGame);
-
-// === Start Game ===
-function startGame() {
-  score = 0;
-  stars = [];
-  bombs = [];
-  speedMultiplier = 1;
-  scoreDisplay.textContent = score;
-  retryBtn.style.display = "none";
-  gameRunning = true;
-
-  clearInterval(spawnInterval);
-  spawnInterval = setInterval(() => {
-    if (gameRunning) {
-      createStar();
-      if (Math.random() < 0.3) createBomb();
-    }
-  }, 1200);
-
-  gameLoop();
-}
-
-// Auto-start
-startGame();
+gameLoop();
