@@ -7,26 +7,38 @@ const playerNameDisplay = document.getElementById("playerName");
 const retryBtn = document.getElementById("retryBtn");
 
 let score = 0;
-let bombs = [];
-
 let stars = [];
+let bombs = [];
 let gameRunning = true;
 let speedMultiplier = 1;
 
-
-// Smooth basket movement variables
+// Smooth basket movement
 let basketX = 160;
 let basketTargetX = 160;
 
-// Ask player name on start
+// Ask player name
 let playerName = prompt("Enter your name:") || "Guest";
 playerNameDisplay.textContent = playerName;
 
-// Get saved high score or 0
+// High score
 let highScore = localStorage.getItem("highScore") || 0;
 highScoreDisplay.textContent = highScore;
 
-// Basket properties star & bomb 
+// Basket properties
+const basket = { y: 450, width: 80, height: 20, speed: 8 };
+
+// Create stars
+function createStar() {
+  stars.push({
+    x: Math.random() * (canvas.width - 20) + 10,
+    y: -20,
+    size: 20,
+    speed: 1 + Math.random() * 2,
+    caught: false
+  });
+}
+
+// Create bombs
 function createBomb() {
   bombs.push({
     x: Math.random() * (canvas.width - 20) + 10,
@@ -36,40 +48,7 @@ function createBomb() {
   });
 }
 
-
-const basket = { y: 450, width: 80, height: 20, speed: 8 };
-
-function createStar() {
-  stars.push({
-    x: Math.random() * (canvas.width - 20) + 10,
-    y: -20,
-    size: 20,
-    speed: 1 + Math.random() * 2,
-    caught: false,  // Initialize caught to false
-  });
-}
-
-// Hover event to catch stars
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const mouseY = e.clientY - rect.top;
-
-  stars.forEach((star) => {
-    if (!star.caught) {
-      const dx = mouseX - star.x;
-      const dy = mouseY - star.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance < star.size / 2) {
-        star.caught = true;
-        score++;
-        scoreDisplay.textContent = score;
-      }
-    }
-  });
-});
-
+// Draw basket
 function drawBasket() {
   ctx.fillStyle = "#ffcc33";
   ctx.shadowColor = "#ffcc33bb";
@@ -84,13 +63,13 @@ function drawBasket() {
   ctx.shadowBlur = 0;
 }
 
+// Draw stars
 function drawStars() {
   ctx.fillStyle = "#ffd60a";
   ctx.shadowColor = "#ffd60abb";
   ctx.shadowBlur = 20;
-  stars.forEach((star) => {
+  stars.forEach(star => {
     ctx.beginPath();
-    // Draw star shape:
     const cx = star.x;
     const cy = star.y;
     const spikes = 5;
@@ -118,38 +97,29 @@ function drawStars() {
   ctx.shadowBlur = 0;
 }
 
+// Draw bombs
+function drawBombs() {
+  ctx.fillStyle = "red";
+  ctx.shadowColor = "#ff0000bb";
+  ctx.shadowBlur = 15;
+  bombs.forEach(bomb => {
+    ctx.beginPath();
+    ctx.arc(bomb.x, bomb.y, bomb.size / 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+}
+
+// Move stars
 function moveStars() {
   for (let i = stars.length - 1; i >= 0; i--) {
-    stars[i].y += stars[i].speed * speedMultiplier; // <- applies multiplier;
+    stars[i].y += stars[i].speed * speedMultiplier;
 
     if (stars[i].caught) {
       stars.splice(i, 1);
       continue;
     }
 
-    function moveBombs() {
-  for (let i = bombs.length - 1; i >= 0; i--) {
-    bombs[i].y += bombs[i].speed * speedMultiplier;
-
-    // Check collision with basket
-    if (
-      bombs[i].y + bombs[i].size > basket.y &&
-      bombs[i].x > basketX &&
-      bombs[i].x < basketX + basket.width
-    ) {
-      // Hit basket -> Game Over
-      endGame();
-      return;
-    } 
-    // Remove if falls off screen
-    else if (bombs[i].y > canvas.height) {
-      bombs.splice(i, 1);
-    }
-  }
-}
-
-
-    // Check collision with basket
     if (
       stars[i].y + stars[i].size > basket.y &&
       stars[i].x > basketX &&
@@ -165,6 +135,25 @@ function moveStars() {
   }
 }
 
+// Move bombs
+function moveBombs() {
+  for (let i = bombs.length - 1; i >= 0; i--) {
+    bombs[i].y += bombs[i].speed * speedMultiplier;
+
+    if (
+      bombs[i].y + bombs[i].size > basket.y &&
+      bombs[i].x > basketX &&
+      bombs[i].x < basketX + basket.width
+    ) {
+      endGame();
+      return;
+    } else if (bombs[i].y > canvas.height) {
+      bombs.splice(i, 1);
+    }
+  }
+}
+
+// Update high score
 function updateHighScore(score) {
   if (score > highScore) {
     highScore = score;
@@ -173,6 +162,7 @@ function updateHighScore(score) {
   }
 }
 
+// End game
 function endGame() {
   if (!gameRunning) return;
   gameRunning = false;
@@ -181,13 +171,13 @@ function endGame() {
   retryBtn.style.display = "inline-block";
 }
 
+// Game loop
 function gameLoop() {
   if (!gameRunning) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-   // Slowly increase difficulty
-  speedMultiplier += 0.0005; // adjust to make it faster/slower
 
-  // Smooth basket movement (lerp)
+  speedMultiplier += 0.0005;
+
   basketX += (basketTargetX - basketX) * 0.2;
 
   drawBasket();
@@ -196,14 +186,11 @@ function gameLoop() {
   moveStars();
   moveBombs();
 
-  drawStars();
-  moveStars();
-
   requestAnimationFrame(gameLoop);
 }
 
-// Keyboard input for basket control
-document.addEventListener("keydown", (e) => {
+// Keyboard controls
+document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") {
     basketTargetX = Math.max(basketTargetX - basket.speed, 0);
   }
@@ -212,32 +199,28 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Retry button
 retryBtn.addEventListener("click", () => {
   score = 0;
   stars = [];
-  bombs = []; // reset bombs too
+  bombs = [];
+  speedMultiplier = 1;
   scoreDisplay.textContent = score;
   gameRunning = true;
-  speedMultiplier = 1; // reset speed
   retryBtn.style.display = "none";
   gameLoop();
 });
 
-// Start spawning stars after 2 seconds
+// Spawn stars & bombs
 setTimeout(() => {
   setInterval(() => {
-    if (gameRunning) createStar();
+    if (gameRunning) {
+      createStar();
+      if (Math.random() < 0.3) {
+        createBomb();
+      }
+    }
   }, 1200);
 }, 2000);
-
-setInterval(() => {
-  if (gameRunning) {
-    createStar();
-    if (Math.random() < 0.3) { // 30% chance to spawn bomb
-      createBomb();
-    }
-  }
-}, 1200);
-
 
 gameLoop();
