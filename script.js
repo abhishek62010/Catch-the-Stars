@@ -180,14 +180,17 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// === Controls ===
-document.addEventListener("keydown", e => {
-  if (e.key === "ArrowLeft") {
-    basketTargetX = Math.max(basketTargetX - basket.speed, 0);
-  }
-  if (e.key === "ArrowRight") {
-    basketTargetX = Math.min(basketTargetX + basket.speed, canvas.width - basket.width);
-  }
+// === Mouse Controls ===
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  basketTargetX = e.clientX - rect.left - basket.width / 2;
+  basketTargetX = Math.max(0, Math.min(canvas.width - basket.width, basketTargetX));
+});
+
+canvas.addEventListener("click", e => {
+  const rect = canvas.getBoundingClientRect();
+  basketTargetX = e.clientX - rect.left - basket.width / 2;
+  basketTargetX = Math.max(0, Math.min(canvas.width - basket.width, basketTargetX));
 });
 
 // === Retry Button ===
