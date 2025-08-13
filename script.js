@@ -9,46 +9,40 @@ const retryBtn = document.getElementById("retryBtn");
 let score = 0;
 let stars = [];
 let bombs = [];
-let gameRunning = true;
+let gameRunning = false;
 let speedMultiplier = 1;
-
-// Smooth basket movement
+let spawnInterval;
 let basketX = 160;
 let basketTargetX = 160;
 
-// Ask player name
 let playerName = prompt("Enter your name:") || "Guest";
 playerNameDisplay.textContent = playerName;
 
-// High score
 let highScore = localStorage.getItem("highScore") || 0;
 highScoreDisplay.textContent = highScore;
 
-// Basket properties
 const basket = { y: 450, width: 80, height: 20, speed: 8 };
 
-// Create stars
+// === Spawn Functions ===
 function createStar() {
   stars.push({
     x: Math.random() * (canvas.width - 20) + 10,
     y: -20,
     size: 20,
-    speed: 1 + Math.random() * 2,
-    caught: false
+    speed: 1 + Math.random() * 2
   });
 }
 
-// Create bombs
 function createBomb() {
   bombs.push({
-    x: Math.random() * (canvas.width - 20) + 10,
-    y: -20,
+    x: Math.random() * (canvas.width - 25) + 12,
+    y: -25,
     size: 25,
-    speed: (1 + Math.random() * 2) * speedMultiplier
+    speed: 1 + Math.random() * 2
   });
 }
 
-// Draw basket
+// === Draw Functions ===
 function drawBasket() {
   ctx.fillStyle = "#ffcc33";
   ctx.shadowColor = "#ffcc33bb";
@@ -63,13 +57,11 @@ function drawBasket() {
   ctx.shadowBlur = 0;
 }
 
-// Draw stars
 function drawStars() {
   ctx.fillStyle = "#ffd60a";
   ctx.shadowColor = "#ffd60abb";
   ctx.shadowBlur = 20;
   stars.forEach(star => {
-    ctx.beginPath();
     const cx = star.x;
     const cy = star.y;
     const spikes = 5;
@@ -78,6 +70,7 @@ function drawStars() {
     let rot = Math.PI / 2 * 3;
     let step = Math.PI / spikes;
 
+    ctx.beginPath();
     ctx.moveTo(cx, cy - outerRadius);
     for (let i = 0; i < spikes; i++) {
       let x = cx + Math.cos(rot) * outerRadius;
@@ -90,14 +83,12 @@ function drawStars() {
       ctx.lineTo(x, y);
       rot += step;
     }
-    ctx.lineTo(cx, cy - outerRadius);
     ctx.closePath();
     ctx.fill();
   });
   ctx.shadowBlur = 0;
 }
 
-// Draw bombs
 function drawBombs() {
   ctx.fillStyle = "red";
   ctx.shadowColor = "#ff0000bb";
@@ -110,16 +101,12 @@ function drawBombs() {
   ctx.shadowBlur = 0;
 }
 
-// Move stars
+// === Movement ===
 function moveStars() {
   for (let i = stars.length - 1; i >= 0; i--) {
     stars[i].y += stars[i].speed * speedMultiplier;
 
-    if (stars[i].caught) {
-      stars.splice(i, 1);
-      continue;
-    }
-
+    // Catch star
     if (
       stars[i].y + stars[i].size > basket.y &&
       stars[i].x > basketX &&
@@ -128,18 +115,20 @@ function moveStars() {
       score++;
       scoreDisplay.textContent = score;
       stars.splice(i, 1);
-    } else if (stars[i].y > canvas.height) {
+    } 
+    // Missed star
+    else if (stars[i].y > canvas.height) {
       endGame();
       return;
     }
   }
 }
 
-// Move bombs
 function moveBombs() {
   for (let i = bombs.length - 1; i >= 0; i--) {
     bombs[i].y += bombs[i].speed * speedMultiplier;
 
+    // Hit basket
     if (
       bombs[i].y + bombs[i].size > basket.y &&
       bombs[i].x > basketX &&
@@ -147,13 +136,15 @@ function moveBombs() {
     ) {
       endGame();
       return;
-    } else if (bombs[i].y > canvas.height) {
+    }
+    // Fell off screen
+    else if (bombs[i].y > canvas.height) {
       bombs.splice(i, 1);
     }
   }
 }
 
-// Update high score
+// === High Score ===
 function updateHighScore(score) {
   if (score > highScore) {
     highScore = score;
@@ -162,22 +153,22 @@ function updateHighScore(score) {
   }
 }
 
-// End game
+// === End Game ===
 function endGame() {
   if (!gameRunning) return;
   gameRunning = false;
+  clearInterval(spawnInterval);
   updateHighScore(score);
   alert(`${playerName}, Game Over! Your score: ${score} | High Score: ${highScore}`);
   retryBtn.style.display = "inline-block";
 }
 
-// Game loop
+// === Game Loop ===
 function gameLoop() {
   if (!gameRunning) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  speedMultiplier += 0.0005;
-
+  speedMultiplier += 0.0005; // slow smooth speed increase
   basketX += (basketTargetX - basketX) * 0.2;
 
   drawBasket();
@@ -189,7 +180,7 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// Keyboard controls
+// === Controls ===
 document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") {
     basketTargetX = Math.max(basketTargetX - basket.speed, 0);
@@ -199,28 +190,29 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// Retry button
-retryBtn.addEventListener("click", () => {
+// === Retry Button ===
+retryBtn.addEventListener("click", startGame);
+
+// === Start Game ===
+function startGame() {
   score = 0;
   stars = [];
   bombs = [];
   speedMultiplier = 1;
   scoreDisplay.textContent = score;
-  gameRunning = true;
   retryBtn.style.display = "none";
-  gameLoop();
-});
+  gameRunning = true;
 
-// Spawn stars & bombs
-setTimeout(() => {
-  setInterval(() => {
+  clearInterval(spawnInterval);
+  spawnInterval = setInterval(() => {
     if (gameRunning) {
       createStar();
-      if (Math.random() < 0.3) {
-        createBomb();
-      }
+      if (Math.random() < 0.3) createBomb();
     }
   }, 1200);
-}, 2000);
 
-gameLoop();
+  gameLoop();
+}
+
+// Auto-start
+startGame();
