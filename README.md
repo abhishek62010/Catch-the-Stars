@@ -1,5 +1,4 @@
-If you’re updating your game to include **speed increase over time** and **bomb obstacles**, your README could be improved so players know about these new features.
-Here’s an updated version that matches your code changes:
+
 
 ---
 
